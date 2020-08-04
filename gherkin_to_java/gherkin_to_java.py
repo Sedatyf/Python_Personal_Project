@@ -59,7 +59,7 @@ def parse_feature_file(feature_folder):
     It also checks if the current step not already in the list
     
     Args:
-        feature_folder ([type]): [description]
+        feature_folder (str): the path to the folder that contains feature files
     """
     for feature_file in glob.glob(os.path.join(feature_folder, "*.feature")):
         with open(feature_file, "r") as open_file:
@@ -84,6 +84,11 @@ def parse_feature_file(feature_folder):
                 classify_and_step(processed_lines.index(line), processed_lines, line_without_and)
 
 def write_in_file(step_folder):
+     """This function creates a java file. Then it processes all element in given/when/then lists and write correct steps in the java file
+    
+    Args:
+        step_folder (str): the path to the folder that contains step files
+    """
     path_to_java = os.path.join(step_folder, "java_file_from_script.java")
     f = open(path_to_java, "w")
     
