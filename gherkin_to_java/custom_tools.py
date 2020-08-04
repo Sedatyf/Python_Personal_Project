@@ -1,16 +1,6 @@
-import os
-import termcolor
-import glob
+import os, glob
+import termcolor, tqdm
 
-#Global variable
-given = []
-when = []
-then = []
-
-is_feature_folder_find = False
-is_step_folder_find = False
-
-#Functions
 def check_folder(path):
     """Check if the inputted folder exists.
 
@@ -27,7 +17,7 @@ def check_folder(path):
         termcolor.cprint("Dossier non trouvé !", "red")
         return False
 
-def classify_and_step(current_index, input_list, current_step):
+def classify_and_step(current_index, input_list, current_step, given_list, when_list, then_list):
     """Classify in the right state (aka: Given, When, Then) all And steps.
     It takes a list. This list is shortened with the current_index.
     Then its searching for the first Given/When/Then word to append the current_step in the right list.
@@ -36,30 +26,35 @@ def classify_and_step(current_index, input_list, current_step):
         current_index (int): index of the current step
         input_list (list): list to process 
         current_step (str): step to add
+        given_list (str): list where you want to store your given
+        when_list (str): list where you want to store your when
+        then_list (str): list where you want to store your then
     """
-    shortened_list = input_list[:current_index+1]
     for i in range(current_index, 0, -1):
         if "Given" in input_list[i-1]:
-            if current_step not in given:
-                given.append(current_step)
+            if current_step not in given_list:
+                given_list.append(current_step)
                 break
         elif "When" in input_list[i-1]:
-            if current_step not in when:
-                when.append(current_step)
+            if current_step not in when_list:
+                when_list.append(current_step)
                 break
         elif "Then" in input_list[i-1]:
-            if current_step not in then:
-                then.append(current_step)
+            if current_step not in then_list:
+                then_list.append(current_step)
                 break
         else:
             continue
 
-def parse_feature_file(feature_folder):
+def parse_feature_file(feature_folder, given_list, when_list, then_list):
     """This function reads all feature files then it puts in different list all steps.
     It also checks if the current step not already in the list
     
     Args:
         feature_folder (str): the path to the folder that contains feature files
+        given_list (str): list where you want to store your given
+        when_list (str): list where you want to store your when
+        then_list (str): list where you want to store your then
     """
     for feature_file in glob.glob(os.path.join(feature_folder, "*.feature")):
         with open(feature_file, "r") as open_file:
@@ -67,57 +62,58 @@ def parse_feature_file(feature_folder):
         processed_lines = [x.replace("\n", "") for x in current_feature if any([x.startswith(i) for i in ["Given", "When", "Then", "And"]])]
         #my dumber way to do that was if x.startswith("Given") or x.startswith("When") or x.startswith("Then") or x.startswith("And")
         
-        for line in processed_lines:
+        pbar = tqdm.tqdm(processed_lines)
+        for line in pbar:
+            pbar.set_description("Récupération des steps")
             if line.startswith("Given"):
                 line = line.replace("Given ", "")
-                if line not in given:
-                    given.append(line)
+                if line not in given_list:
+                    given_list.append(line)
             elif line.startswith("When"):
                 line = line.replace("When ", "")
-                if line not in when:
-                    when.append(line)
+                if line not in when_list:
+                    when_list.append(line)
             elif line.startswith("Then"):
                 line = line.replace("Then ", "")
-                if line not in then:
-                    then.append(line)
+                if line not in then_list:
+                    then_list.append(line)
             elif line.startswith("And"):
                 line_without_and = line.replace("And ", "")
-                classify_and_step(processed_lines.index(line), processed_lines, line_without_and)
+                classify_and_step(processed_lines.index(line), processed_lines, line_without_and, given_list, when_list, then_list)
 
-def write_in_file(step_folder):
-     """This function creates a java file. Then it processes all element in given/when/then lists and write correct steps in the java file
+def write_in_file(step_folder, given_list, when_list, then_list):
+    """This function creates a java file. Then it processes all element in given/when/then lists and write correct steps in the java file
     
     Args:
         step_folder (str): the path to the folder that contains step files
+        given_list (str): list where you want to store your given
+        when_list (str): list where you want to store your when
+        then_list (str): list where you want to store your then
     """
     path_to_java = os.path.join(step_folder, "java_file_from_script.java")
     f = open(path_to_java, "w")
     
-    for given_line in given:
+    pbar_given = tqdm.tqdm(given_list)
+    for given_line in pbar_given:
+        pbar_given.set_description("Ecriture des given")
         step_name = given_line.replace("\"", "\\\"")
         function_name = given_line.replace(" ", "_").replace("\"", "").replace("\'","").replace(":", "")
         given_to_write = f"@Given(\"^{step_name}$\")\npublic void {function_name}(){{\n}}\n\n"
         f.write(given_to_write)
-    for when_line in when:
+
+    pbar_when = tqdm.tqdm(when_list)
+    for when_line in pbar_when:
+        pbar_when.set_description("Ecriture des when")
         step_name = when_line.replace("\"", "\\\"")
         function_name = when_line.replace(" ", "_").replace("\"", "").replace("\'","").replace(":", "")
         when_to_write = f"@When(\"^{step_name}$\")\npublic void {function_name}(){{\n}}\n\n"
         f.write(when_to_write)
-    for then_line in then:
+
+    pbar_then = tqdm.tqdm(then_list)
+    for then_line in pbar_then:
         step_name = then_line.replace("\"", "\\\"")
+        pbar_then.set_description("Ecriture des then")
         function_name = then_line.replace(" ", "_").replace("\"", "").replace("\'","").replace(":", "")
         then_to_write = f"@Then(\"^{step_name}$\")\npublic void {function_name}(){{\n}}\n\n"
         f.write(then_to_write)
     f.close()
-
-#Script
-while is_feature_folder_find == False:
-    filepath_feature = input("Veuillez préciser le chemin du dossier contenant les fichiers .features : ")
-    is_feature_folder_find =  check_folder(filepath_feature)
-while is_step_folder_find == False:
-    filepath_steps = input("Veuillez préciser le chemin du dossier contenant les fichiers java : ")
-    is_step_folder_find = check_folder(filepath_steps)
-
-parse_feature_file(filepath_feature)
-write_in_file(filepath_steps)
-termcolor.cprint("Tous les tests ont été traités !", "green")
