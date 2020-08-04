@@ -64,7 +64,7 @@ def parse_feature_file(feature_folder):
     for feature_file in glob.glob(os.path.join(feature_folder, "*.feature")):
         with open(feature_file, "r") as open_file:
             current_feature = open_file.readlines()
-        processed_lines = [x.replace("\n", "") for x in current_feature if ([x.startswith(i) for i in ["Given", "When", "Then", "And"]])]
+        processed_lines = [x.replace("\n", "") for x in current_feature if any([x.startswith(i) for i in ["Given", "When", "Then", "And"]])]
         #my dumber way to do that was if x.startswith("Given") or x.startswith("When") or x.startswith("Then") or x.startswith("And")
         
         for line in processed_lines:
