@@ -56,7 +56,14 @@ def parse_feature_file(feature_folder, given_list, when_list, then_list):
         when_list (str): list where you want to store your when
         then_list (str): list where you want to store your then
     """
-    for feature_file in glob.glob(os.path.join(feature_folder, "*.feature")):
+    feature_list = []
+
+    for root, dirs, files in os.walk(feature_folder):
+        for current_file in files:
+            if current_file.endswith(".feature"):
+                feature_list.append(os.path.join(root, current_file))
+
+    for feature_file in feature_list:
         with open(feature_file, "r") as open_file:
             current_feature = open_file.readlines()
         processed_lines = [x.replace("\n", "") for x in current_feature if any([x.startswith(i) for i in ["Given", "When", "Then", "And"]])]
