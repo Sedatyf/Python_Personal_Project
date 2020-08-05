@@ -22,6 +22,7 @@ def main():
     custom_tools.parse_feature_file(filepath_feature, given, when, then)
     custom_tools.write_in_file(filepath_steps, given, when, then)
     termcolor.cprint("Tous les tests ont été traités !", "green")
+    os.system("pause")
 
 if __name__ == "__main__":
     main()
