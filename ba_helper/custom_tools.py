@@ -63,15 +63,15 @@ def parse_feature_file(feature_folder, given_list, when_list, then_list):
             if current_file.endswith(".feature"):
                 feature_list.append(os.path.join(root, current_file))
 
-    for feature_file in feature_list:
+    pbar = tqdm.tqdm(feature_list)
+    for feature_file in pbar:
+        pbar.set_description("Récupération des steps")
         with open(feature_file, "r") as open_file:
             current_feature = open_file.readlines()
         processed_lines = [x.replace("\n", "") for x in current_feature if any([x.startswith(i) for i in ["Given", "When", "Then", "And"]])]
         #my dumber way to do that was if x.startswith("Given") or x.startswith("When") or x.startswith("Then") or x.startswith("And")
         
-        pbar = tqdm.tqdm(processed_lines)
-        for line in pbar:
-            pbar.set_description("Récupération des steps")
+        for line in processed_lines:
             if line.startswith("Given"):
                 line = line.replace("Given ", "")
                 if line not in given_list:
